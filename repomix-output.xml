@@ -1,0 +1,343 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+autoscroll.js
+bridge.js
+manifest.json
+normal_yt.js
+player_controls.js
+popup.html
+popup.js
+shorts_volume.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="autoscroll.js">
+(function() {
+    const log = (msg) => console.log(`%c[Gemini Force] ${msg}`, "color: #00ff00; font-weight: bold;");
+
+    const findAndScroll = () => {
+        if (window.ytSettings?.autoScroll === false) return;
+
+        const allShorts = document.querySelectorAll('ytd-reel-video-renderer');
+        let activeVideo = null;
+        let activeContainer = null;
+
+        allShorts.forEach(container => {
+            const rect = container.getBoundingClientRect();
+            if (rect.top >= -100 && rect.top <= 100) {
+                activeVideo = container.querySelector('video');
+                activeContainer = container;
+            }
+        });
+
+        if (activeVideo && !activeVideo.paused) {
+            activeVideo.loop = false; 
+
+            if (activeVideo.duration > 0 && (activeVideo.duration - activeVideo.currentTime < 0.5)) {
+                if (!activeVideo.dataset.scrolled) {
+                    activeVideo.dataset.scrolled = "true";
+                    log("Video finished. Executing Multi-Method Scroll...");
+
+                    // Method 1: Arrow Down on Video Container (Most Reliable for Desktop)
+                    const downEvent = new KeyboardEvent('keydown', {
+                        bubbles: true,
+                        cancelable: true,
+                        key: "ArrowDown",
+                        keyCode: 40,
+                        code: "ArrowDown",
+                        which: 40
+                    });
+                    (activeContainer || document).dispatchEvent(downEvent);
+
+                    // Method 2: YouTube's internal Scroll function (Agar available ho)
+                    const shortsContainer = document.getElementById('shorts-container');
+                    if (shortsContainer) {
+                        shortsContainer.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+                    }
+
+                    // Method 3: Click Next Button (Sabse safe backup)
+                    const nextButton = document.querySelector('#navigation-button-down button, [aria-label="Next video"]');
+                    if (nextButton) nextButton.click();
+                }
+            } else if (activeVideo.currentTime < 1) {
+                activeVideo.dataset.scrolled = ""; 
+            }
+        }
+    };
+
+    setInterval(findAndScroll, 500);
+    log("Force Engine Active with Multi-Scroll fix.");
+})();
+</file>
+
+<file path="bridge.js">
+(function() {
+    window.ytSettings = {
+        autoScroll: true,
+        customButtons: true,
+        shortsVolume: true,
+        normalVolume: true
+    };
+
+    const log = (msg) => console.log(`%c[Gemini Bridge] ${msg}`, "color: #00ff00; font-weight: bold;");
+
+    window.addEventListener("message", (event) => {
+        if (event.data.type === 'GEMINI_SYNC') {
+            window.ytSettings = Object.assign({}, window.ytSettings, event.data.settings);
+            log("Settings Synced: " + JSON.stringify(window.ytSettings));
+            window.dispatchEvent(new CustomEvent('gemini-refresh'));
+        }
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+        const sync = () => {
+            chrome.storage.local.get(null, (data) => {
+                window.postMessage({ type: 'GEMINI_SYNC', settings: data }, "*");
+            });
+        };
+        chrome.storage.onChanged.addListener(sync);
+        sync();
+    }
+})();
+</file>
+
+<file path="manifest.json">
+{
+  "manifest_version": 3,
+  "name": "YT Enhancer Pro v10",
+  "version": "11",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+  "action": { "default_popup": "popup.html" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["bridge.js", "autoscroll.js", "player_controls.js", "normal_yt.js", "shorts_volume.js"],
+      "run_at": "document_end",
+      "world": "MAIN"
+    }
+  ]
+}
+</file>
+
+<file path="normal_yt.js">
+// normal_yt.js
+(function() {
+    const log = (msg) => { if (typeof window.geminiLog === 'function') window.geminiLog(msg); };
+
+    window.addEventListener("wheel", (e) => {
+        if (window.location.pathname.includes('/shorts/') || window.ytSettings?.normalVolume === false) return;
+
+        const video = document.querySelector("video");
+        const isOverPlayer = e.target.closest("#movie_player, .ytd-player, .video-stream");
+
+        if (video && isOverPlayer) {
+            e.preventDefault();
+            const sensitivity = 0.05;
+            video.volume = Math.max(0, Math.min(1, video.volume + (e.deltaY < 0 ? sensitivity : -sensitivity)));
+            updateNormalHUD(Math.round(video.volume * 100));
+        }
+    }, { passive: false });
+
+    function updateNormalHUD(vol) {
+        let hud = document.getElementById("yt-normal-volume-hud") || (function() {
+            const h = document.createElement("div");
+            h.id = "yt-normal-volume-hud";
+            h.style.cssText = "position:fixed; top:15%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:12px 24px; border-radius:30px; font-size:22px; z-index:999999; pointer-events:none; border:1px solid #ff0000; transition: opacity 0.2s; font-family: sans-serif;";
+            document.body.appendChild(h);
+            return h;
+        })();
+        hud.textContent = `🔊 Volume: ${vol}%`;
+        hud.style.opacity = "1";
+        clearTimeout(window.normVolT);
+        window.normVolT = setTimeout(() => { hud.style.opacity = "0"; }, 1000);
+    }
+})();
+</file>
+
+<file path="player_controls.js">
+(function() {
+    const manageButtons = () => {
+        const existingGroup = document.getElementById('gemini-seek-group');
+        const controls = document.querySelector('.ytp-left-controls');
+
+        if (window.ytSettings?.customButtons === false) {
+            if (existingGroup) existingGroup.remove();
+            return;
+        }
+
+        if (!existingGroup && controls) {
+            const group = document.createElement('span');
+            group.id = 'gemini-seek-group';
+            group.style.cssText = "display:inline-flex; align-items:center; margin-left:5px;";
+            
+            const createBtn = (isForward) => {
+                const btn = document.createElement('button');
+                btn.className = 'ytp-button';
+                btn.textContent = isForward ? '⏩' : '⏪'; 
+                btn.style.fontSize = "20px";
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    const v = document.querySelector('video');
+                    if (v) v.currentTime += (isForward ? 10 : -10);
+                };
+                return btn;
+            };
+
+            group.appendChild(createBtn(false));
+            group.appendChild(createBtn(true));
+            controls.appendChild(group);
+        }
+    };
+
+    window.addEventListener('gemini-refresh', manageButtons);
+    setInterval(manageButtons, 2000);
+})();
+</file>
+
+<file path="popup.html">
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { width: 240px; padding: 15px; font-family: sans-serif; background: #0f0f0f; color: white; }
+        .container { display: flex; flex-direction: column; gap: 12px; }
+        h3 { margin: 0; color: #ff0000; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .toggle-group { display: flex; justify-content: space-between; align-items: center; }
+        .switch { position: relative; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #ff0000; }
+        input:checked + .slider:before { transform: translateX(14px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>YT Enhancer Pro</h3>
+        <div class="toggle-group"><span>Auto-Scroll</span><label class="switch"><input type="checkbox" id="autoScroll"><span class="slider"></span></label></div>
+        <div class="toggle-group"><span>Seek Buttons</span><label class="switch"><input type="checkbox" id="customButtons"><span class="slider"></span></label></div>
+        <div class="toggle-group"><span>Shorts Volume</span><label class="switch"><input type="checkbox" id="shortsVolume"><span class="slider"></span></label></div>
+        <div class="toggle-group"><span>Normal Volume</span><label class="switch"><input type="checkbox" id="normalVolume"><span class="slider"></span></label></div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
+</file>
+
+<file path="popup.js">
+document.addEventListener('DOMContentLoaded', () => {
+    const keys = ['autoScroll', 'customButtons', 'shortsVolume', 'normalVolume'];
+    
+    chrome.storage.local.get(keys, (data) => {
+        keys.forEach(key => {
+            const el = document.getElementById(key);
+            if (el) el.checked = data[key] ?? true;
+        });
+    });
+
+    keys.forEach(key => {
+        document.getElementById(key).addEventListener('change', (e) => {
+            chrome.storage.local.set({ [key]: e.target.checked });
+        });
+    });
+});
+</file>
+
+<file path="shorts_volume.js">
+(function() {
+    window.addEventListener("wheel", (e) => {
+        // Sirf shorts page par kaam kare
+        if (!window.location.pathname.includes('/shorts/')) return;
+        // Check agar settings mein enabled hai
+        if (window.ytSettings?.shortsVolume === false) return;
+
+        // Check karein ke mouse video player ke upar hai ya nahi
+        // YouTube Shorts mein player container ka selector aksar 'ytd-reel-video-renderer' ya '.video-stream' hota hai
+        const isOverPlayer = e.target.closest('ytd-reel-video-renderer, .video-stream, #player-container');
+
+        if (!isOverPlayer) return; // Agar mouse video ke upar nahi hai, to kuch mat karo (default scroll chalne do)
+
+        const allVideos = document.querySelectorAll('video');
+        let activeVideo = null;
+
+        allVideos.forEach(v => {
+            const rect = v.getBoundingClientRect();
+            // Active video wahi hai jo screen par nazar aa rahi hai
+            if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+                activeVideo = v;
+            }
+        });
+        
+        if (activeVideo) {
+            e.preventDefault(); // Default scroll ko roko kyunki mouse video par hai
+            const step = 0.05;
+            activeVideo.volume = Math.max(0, Math.min(1, activeVideo.volume + (e.deltaY < 0 ? step : -step)));
+            showHUD(Math.round(activeVideo.volume * 100));
+        }
+    }, { passive: false });
+
+    function showHUD(vol) {
+        let hud = document.getElementById("v-hud-shorts") || (function() {
+            const h = document.createElement('div');
+            h.id = "v-hud-shorts";
+            h.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,0.8); color:#00ffff; padding:20px 40px; border-radius:100px; z-index:99999; font-size:32px; border:2px solid #00ffff; pointer-events:none; transition: opacity 0.2s; font-family: sans-serif;";
+            document.body.appendChild(h);
+            return h;
+        })();
+        hud.textContent = `🔊 ${vol}%`;
+        hud.style.opacity = "1";
+        clearTimeout(window.sVT);
+        window.sVT = setTimeout(() => hud.style.opacity = "0", 800);
+    }
+})();
+</file>
+
+</files>
