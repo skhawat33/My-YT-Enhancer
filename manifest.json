@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Enhancer Pro v10",
-  "version": "11",
+  "version": "12.4",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
   "action": { "default_popup": "popup.html" },
@@ -13,7 +13,14 @@
     },
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["bridge.js", "autoscroll.js", "player_controls.js", "normal_yt.js", "shorts_volume.js"],
+      "js": [
+        "bridge.js", 
+        "autoscroll.js", 
+        "player_controls.js", 
+        "normal_yt.js", 
+        "shorts_volume.js",
+        "speed_control.js"  
+      ],
       "run_at": "document_end",
       "world": "MAIN"
     }
