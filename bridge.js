@@ -2,9 +2,11 @@
     window.ytSettings = {
         autoScroll: true,
         customButtons: true,
+        speedControl: true, // Naya default add kiya
         shortsVolume: true,
         normalVolume: true
     };
+    // ... rest of your bridge.js code ...
 
     const log = (msg) => console.log(`%c[Gemini Bridge] ${msg}`, "color: #00ff00; font-weight: bold;");
 

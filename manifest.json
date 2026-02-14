@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Enhancer Pro v10",
-  "version": "12.4",
+  "version": "13.0",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
   "action": { "default_popup": "popup.html" },

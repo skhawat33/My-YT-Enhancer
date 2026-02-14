@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const keys = ['autoScroll', 'customButtons', 'shortsVolume', 'normalVolume'];
+    // keys array mein speedControl add kiya
+    const keys = ['autoScroll', 'customButtons', 'speedControl', 'shortsVolume', 'normalVolume'];
     
     chrome.storage.local.get(keys, (data) => {
         keys.forEach(key => {

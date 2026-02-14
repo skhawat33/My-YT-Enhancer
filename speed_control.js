@@ -3,6 +3,12 @@
         const existingGroup = document.getElementById('gemini-speed-group');
         const controls = document.querySelector('.ytp-left-controls');
 
+        // Check agar settings mein disabled hai
+        if (window.ytSettings?.speedControl === false) {
+            if (existingGroup) existingGroup.remove();
+            return;
+        }
+
         if (!controls || existingGroup) return;
 
         const group = document.createElement('span');
@@ -92,5 +98,8 @@
         controls.appendChild(group);
     };
 
+    // Real-time toggle listener
+    window.addEventListener('gemini-refresh', manageSpeedButtons);
+    // Dynamic page loading support
     setInterval(manageSpeedButtons, 2000);
 })();
